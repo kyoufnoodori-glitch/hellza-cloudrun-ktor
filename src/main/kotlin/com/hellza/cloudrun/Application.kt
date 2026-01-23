@@ -28,35 +28,33 @@ fun Application.module() {
     val adminToken = System.getenv("HP_ADMIN_TOKEN") ?: "admin-token-very-long"
 
     routing {
-        // --- 1. 管理者用：PIN設定 ---
+        // =========== ここから：元々のAPI機能 ===========
+
+        // 1. 管理者用：PIN設定
         post("/api/admin/setpin") {
             val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
+            val adminToken = System.getenv("HP_ADMIN_TOKEN")
             if (!adminToken.isNullOrBlank() && token != adminToken) {
                 return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
             }
-
             val req = call.receive<AdminSetPinRequest>()
             val cid = req.cid
             val pin = req.pin
-
             if (cid.isNullOrBlank() || pin.isNullOrBlank()) {
                 return@post call.respond(HttpStatusCode.BadRequest, ErrorResponse("cid and pin required"))
             }
-
             val hash = Auth.calcPinHash(pinSecret, cid, pin)
             repo.forceSetPin(cid, hash, req.initialPoint ?: 0)
             call.respond(OkResponse(true))
         }
 
-        // --- 2. ユーザー用：PIN検証 ---
+        // 2. ユーザー用：PIN検証
         post("/api/pin") {
             val req = call.receive<PinRequest>()
             val cid = req.cid ?: return@post call.respond(HttpStatusCode.BadRequest)
             val pin = req.pin ?: return@post call.respond(HttpStatusCode.BadRequest)
-
             val storedHash = repo.getPinHash(cid) ?: return@post call.respond(HttpStatusCode.NotFound)
             val actual = Auth.calcPinHash(pinSecret, cid, pin)
-
             if (actual != storedHash) {
                 call.respond(HttpStatusCode.Unauthorized, ErrorResponse("pin invalid"))
                 return@post
@@ -64,11 +62,31 @@ fun Application.module() {
             call.respond(OkResponse(true))
         }
 
-        // --- 3. ユーザー用：カード情報取得 ---
+        // 3. ユーザー用：カード情報取得
         get("/api/card") {
             val cid = call.request.queryParameters["cid"] ?: return@get call.respond(HttpStatusCode.BadRequest)
             val cardView = repo.getCardView(cid) ?: return@get call.respond(HttpStatusCode.NotFound)
             call.respond(cardView)
+        }
+
+        // =========== ★ここから追加！(Web画面を表示する機能)★ ===========
+
+        // 4. app.js や styles.css を読み込めるようにする
+        // (URLで /c/app.js と来たものを、staticフォルダの中身に繋ぐ)
+        staticResources("/c", "static")
+
+        // 5. 画像ファイル (/assets/xxx.png) を読み込めるようにする
+        staticResources("/assets", "static/assets")
+
+        // 6. 最重要： /c/hellza01 にアクセスしたら index.html を表示する
+        get("/c/{cid}") {
+            // "static/index.html" を読み込んで表示
+            val content = this::class.java.classLoader.getResource("static/index.html")?.readText()
+            if (content != null) {
+                call.respondText(content, ContentType.Text.Html)
+            } else {
+                call.respond(HttpStatusCode.NotFound, "index.html not found on server")
+            }
         }
     }
 }

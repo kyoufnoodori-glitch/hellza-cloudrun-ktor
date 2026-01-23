@@ -22,7 +22,7 @@ const viewMsg = document.getElementById("viewMsg");
 const POS = {
   // 右上のID記入欄（開始位置）
   // 予想：xは枠の左端あたり、yは枠の上下中央
-  cid: { x: 2000, y: 140 },
+  cid: { x: 1960, y: 140 },
 
   // 真ん中のポイント記入欄（中央位置）
   // 予想：xは枠のど真ん中、yは枠のど真ん中
