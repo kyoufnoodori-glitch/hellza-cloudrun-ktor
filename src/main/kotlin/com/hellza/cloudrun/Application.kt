@@ -48,7 +48,27 @@ fun Application.module() {
             repo.forceSetPin(cid, hash, req.initialPoint ?: 0)
             call.respond(OkResponse(true))
         }
+// ★追加: アプリからのログ同期（管理者用）
+        post("/api/admin/syncEvents") {
+            // 1. 認証チェック
+            val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
+            val envAdminToken = System.getenv("HP_ADMIN_TOKEN")
+            if (!envAdminToken.isNullOrBlank() && token != envAdminToken) {
+                return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
+            }
 
+            // 2. データ受け取り（今は受け取って「OK」と返すだけ。後でFirestore保存などを実装可能）
+            // アプリ側から送られてくるJSON: { "events": [ ... ] }
+            try {
+                val reqJson = call.receive<String>()
+                // ここで本来は reqJson を解析してDBに保存します
+                // println("Received events: $reqJson") // ログに出すなら
+
+                call.respond(OkResponse(true))
+            } catch (e: Exception) {
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid JSON format"))
+            }
+        }
         // 2. ユーザー用：PIN検証
         post("/api/pin") {
             val req = call.receive<PinRequest>()
