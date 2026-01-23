@@ -2,79 +2,76 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Hellzapoppin' Member's Card</title>
     <style>
         /* ================= 全体の設定 ================= */
         body {
             margin: 0;
             padding: 0;
-            /* 背景は黒一色で統一 */
             background-color: #000000;
             color: #ffffff;
-            /* フォントは少しエッジの効いたものに */
             font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
-            /* 画面中央に配置 */
+
+            /* 画面中央配置 */
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 画面の高さいっぱいに広げる */
-            height: 100vh;
-            /* スクロールを防ぐ */
+
+            /* 画面の高さ確保 (アドレスバー対策で少し余裕を持たせる) */
+            min-height: 100vh;
+            min-height: 100dvh; /* モバイルブラウザ用の動的高さ */
+
             overflow: hidden;
+            /* タップ時のハイライトを無効化 */
+            -webkit-tap-highlight-color: transparent;
         }
 
-        /* ================= カード本体のデザイン ================= */
+        /* ================= カード本体 ================= */
         .card {
-            /* 基本サイズ：横長 */
+            /* ベースサイズ（PC表示時の基準） */
             width: 560px;
             height: 320px;
-            /* 角丸 */
+
             border-radius: 20px;
-            /* 強い影をつけて浮き上がらせる */
             box-shadow: 0 20px 50px rgba(255, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
-            text-align: left;
-            /* 枠線 */
             border: 3px solid #ff3366;
+
+            /* 初期状態は非表示（JSでサイズ計算してから表示） */
+            opacity: 0;
+            transition: opacity 0.5s ease;
         }
 
-        /* 背景画像の設定 */
+        /* 背景画像 */
         .card-bg {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            /* 配置した画像を読み込む */
             background-image: url('/assets/members_bg.png');
-            /* 画像をカード全体に隙間なく表示 */
             background-size: cover;
-            /* 画像の中心を合わせる */
             background-position: center;
-            /* 文字を読みやすくするため、少し暗くするフィルター */
-            filter: brightness(0.7);
+            filter: brightness(0.8);
             z-index: 0;
         }
 
-        /* ================= コンテンツのレイアウト ================= */
+        /* ================= コンテンツ ================= */
         .content {
             position: relative;
-            z-index: 1; /* 背景より手前に */
+            z-index: 1;
+            width: 100%;
             height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 25px;
-            box-sizing: border-box;
-            /* テキストに影をつけて視認性を高める */
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* ヘッダー部分（グループ名など） */
+        /* 1. 左上：グループ名 */
         .header {
-            /* 左上に配置 */
+            position: absolute;
+            top: 25px;
+            left: 30px;
+            text-align: left;
         }
 
         .group-name {
@@ -82,10 +79,10 @@
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
-            /* グラデーション文字 */
             background: linear-gradient(to right, #fff, #ff3366);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
         }
 
         .card-title {
@@ -93,137 +90,180 @@
             color: #ff99cc;
             letter-spacing: 2px;
             margin-top: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* ポイント表示部分 */
+        /* 2. 中央：ポイント表示 */
         .points-container {
-            /* 右側に配置 */
-            align-self: flex-end;
-            text-align: right;
-            margin-bottom: 30px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            width: 100%;
+            /* 背景の山脈が見えるように少し位置調整してもOK */
         }
 
         .points-label {
             font-size: 16px;
             color: #cccccc;
             margin-bottom: 5px;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.9);
         }
 
         .points-value {
-            font-size: 64px;
+            font-size: 80px;
             line-height: 1;
             font-weight: 900;
             color: #ffffff;
-            /* ポイント数を強調する発光エフェクト */
-            text-shadow: 0 0 20px #ff0000, 0 0 10px #ff3366;
+            text-shadow: 0 0 20px #ff0000, 0 0 10px #ff3366, 2px 2px 0px #000;
         }
 
         .points-unit {
             font-size: 24px;
             color: #ff3366;
             margin-left: 5px;
+            text-shadow: 1px 1px 0 #000;
         }
 
-        /* フッター部分（ID表示） */
-        .footer {
-            font-size: 14px;
+        /* 3. 右上：会員ID */
+        .id-container {
+            position: absolute;
+            top: 25px;
+            right: 30px;
+            text-align: right;
+        }
+
+        .id-label {
+            font-size: 12px;
             color: #aaaaaa;
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
         }
 
         #user-id {
             font-family: monospace;
-            font-size: 20px;
+            font-size: 28px;
             color: #ffffff;
             letter-spacing: 2px;
-            margin-top: 5px;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 2px 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* 読み込み中の点滅アニメーション */
         .loading {
-            font-size: 18px;
+            font-size: 24px;
             animation: blink 0.8s infinite alternate;
         }
+        @keyframes blink { from { opacity: 0.3; } to { opacity: 1.0; } }
 
-        @keyframes blink {
-            from { opacity: 0.3; }
-            to { opacity: 1.0; }
-        }
-
-        /* ================= ★スマホでの横置き強制設定★ ================= */
-        /* 画面幅が狭く、かつ縦向き（portrait）の場合に適用 */
-        @media screen and (max-width: 768px) and (orientation: portrait) {
-            .card {
-                /* 絶対配置で画面中央へ */
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                /* 1. translate(-50%, -50%): 中心を基準点にする
-                   2. rotate(90deg): 90度回転させて横向きにする
-                   3. scale(0.7): 画面からはみ出さないように少し縮小（調整可能）
-                */
-                transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
-                /* 回転の軸をカードの中心に設定 */
-                transform-origin: center center;
-            }
-        }
     </style>
 </head>
 <body>
 
-<div class="card">
+<div class="card" id="card">
     <div class="card-bg"></div>
-
     <div class="content">
         <div class="header">
             <div class="group-name">Hellzapoppin'</div>
             <div class="card-title">OFFICIAL MEMBER'S CARD</div>
         </div>
-
+        <div class="id-container">
+            <div class="id-label">MEMBER ID</div>
+            <div id="user-id">Checking...</div>
+        </div>
         <div class="points-container">
             <div class="points-label">CURRENT POINTS</div>
             <div class="points-value" id="points-display">
                 <span class="loading">Loading...</span>
             </div>
         </div>
-
-        <div class="footer">
-            <div>MEMBER ID</div>
-            <div id="user-id">Checking...</div>
-        </div>
     </div>
 </div>
 
 <script>
-    // 1. URLからIDを取得 (例: /c/hellza01 -> hellza01)
-    const pathParts = window.location.pathname.split('/');
-    const cid = pathParts[pathParts.length - 1]; // 最後の部分を取得
+    // ==========================================
+    //  画面サイズに合わせて最大化するロジック
+    // ==========================================
+    function adjustLayout() {
+        const card = document.getElementById('card');
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
 
-    // 画面にIDを表示
+        // カードの基本サイズ
+        const cardBaseWidth = 560;
+        const cardBaseHeight = 320;
+
+        // スマホ縦持ち判定 (幅 < 高さ)
+        const isPortrait = windowWidth < windowHeight;
+
+        if (isPortrait) {
+            // === スマホ縦向き：90度回転して最大化 ===
+
+            // 回転後のカードの幅 = 画面の高さに合わせたい
+            // 回転後のカードの高さ = 画面の幅に合わせたい
+
+            // 余白（セーフエリア考慮で少し余裕を持たせる）
+            const margin = 0.92;
+
+            // 倍率計算
+            // 1. 画面の幅(短辺)に、カードの高さ(320)が収まる倍率
+            const scaleW = (windowWidth * margin) / cardBaseHeight;
+            // 2. 画面の高さ(長辺)に、カードの幅(560)が収まる倍率
+            const scaleH = (windowHeight * margin) / cardBaseWidth;
+
+            // どちらか小さい方の倍率を採用（はみ出さないように）
+            const scale = Math.min(scaleW, scaleH);
+
+            card.style.transform = `rotate(90deg) scale(${scale})`;
+        } else {
+            // === PC・スマホ横向き：そのまま表示 ===
+
+            const margin = 0.95;
+            const scaleW = (windowWidth * margin) / cardBaseWidth;
+            const scaleH = (windowHeight * margin) / cardBaseHeight;
+
+            // 画面よりカードが大きい場合のみ縮小、それ以外は1倍（または拡大したければMath.minだけでOK）
+            let scale = Math.min(scaleW, scaleH);
+            if (scale > 1.2) scale = 1.2; // PCであまり巨大になりすぎないように制限
+
+            card.style.transform = `rotate(0deg) scale(${scale})`;
+        }
+
+        // 計算が終わったら表示
+        card.style.opacity = 1;
+    }
+
+    // 読み込み時とリサイズ時に調整実行
+    window.addEventListener('load', adjustLayout);
+    window.addEventListener('resize', adjustLayout);
+
+
+    // ==========================================
+    //  データ取得ロジック (変更なし)
+    // ==========================================
+    const pathParts = window.location.pathname.split('/');
+    const cid = pathParts[pathParts.length - 1];
     const userIdElement = document.getElementById('user-id');
+
     if (cid && cid !== 'c') {
          userIdElement.textContent = cid.toUpperCase();
     } else {
          userIdElement.textContent = 'UNKNOWN';
     }
 
-    // 2. APIを叩いてポイントを取得する
     async function fetchPoints() {
         if (!cid || cid === 'c') {
             document.getElementById('points-display').innerHTML = '<span style="font-size:24px">ERROR</span>';
             return;
         }
         try {
-            // APIにアクセス
             const response = await fetch(`/api/card?cid=${cid}`);
-
             if (response.ok) {
                 const data = await response.json();
-                // ポイント数を取得（プロパティ名はサーバー側の実装に合わせてください。ここでは 'point' と仮定）
                 const point = data.point !== undefined ? data.point : 0;
-
-                // カンマ区切りで表示
                 const formattedPoint = point.toLocaleString();
-
                 document.getElementById('points-display').innerHTML =
                     `${formattedPoint}<span class="points-unit">pt</span>`;
             } else {
@@ -234,8 +274,6 @@
             document.getElementById('points-display').innerHTML = '<span style="font-size:24px">OFFLINE</span>';
         }
     }
-
-    // 実行
     fetchPoints();
 </script>
 </body>
