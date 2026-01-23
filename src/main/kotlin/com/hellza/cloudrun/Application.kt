@@ -4,6 +4,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
+import io.ktor.server.http.content.* // ★ここを追加しました（staticResources用）
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -33,8 +34,8 @@ fun Application.module() {
         // 1. 管理者用：PIN設定
         post("/api/admin/setpin") {
             val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
-            val adminToken = System.getenv("HP_ADMIN_TOKEN")
-            if (!adminToken.isNullOrBlank() && token != adminToken) {
+            val envAdminToken = System.getenv("HP_ADMIN_TOKEN")
+            if (!envAdminToken.isNullOrBlank() && token != envAdminToken) {
                 return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
             }
             val req = call.receive<AdminSetPinRequest>()
