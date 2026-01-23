@@ -13,24 +13,24 @@
             color: #ffffff;
             font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
 
-            /* 画面中央配置 */
+            /* 中央配置 */
             display: flex;
             justify-content: center;
             align-items: center;
 
-            /* 画面の高さ確保 (アドレスバー対策で少し余裕を持たせる) */
-            min-height: 100vh;
-            min-height: 100dvh; /* モバイルブラウザ用の動的高さ */
+            /* 画面サイズ確保 */
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh; /* モバイル用 */
 
             overflow: hidden;
-            /* タップ時のハイライトを無効化 */
             -webkit-tap-highlight-color: transparent;
         }
 
         /* ================= カード本体 ================= */
         .card {
-            /* ベースサイズ（PC表示時の基準） */
-            width: 560px;
+            /* ★640pxに戻しました */
+            width: 640px;
             height: 320px;
 
             border-radius: 20px;
@@ -39,9 +39,9 @@
             overflow: hidden;
             border: 3px solid #ff3366;
 
-            /* 初期状態は非表示（JSでサイズ計算してから表示） */
+            /* JSで計算が終わるまで隠す */
             opacity: 0;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.3s ease; /* 回転時のチラつき防止のため少し早めに */
         }
 
         /* 背景画像 */
@@ -53,7 +53,8 @@
             height: 100%;
             background-image: url('/assets/members_bg.png');
             background-size: cover;
-            background-position: center;
+            /* 下揃え（キャラ切れ防止） */
+            background-position: bottom center;
             filter: brightness(0.8);
             z-index: 0;
         }
@@ -66,7 +67,7 @@
             height: 100%;
         }
 
-        /* 1. 左上：グループ名 */
+        /* 左上：グループ名 */
         .header {
             position: absolute;
             top: 25px;
@@ -93,7 +94,7 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
 
-        /* 2. 中央：ポイント表示 */
+        /* 中央：ポイント表示 */
         .points-container {
             position: absolute;
             top: 50%;
@@ -126,7 +127,7 @@
             text-shadow: 1px 1px 0 #000;
         }
 
-        /* 3. 右上：会員ID (サイズ調整) */
+        /* 右上：会員ID */
         .id-container {
             position: absolute;
             top: 25px;
@@ -135,7 +136,7 @@
         }
 
         .id-label {
-            font-size: 11px; /* 12px -> 11px に少し縮小 */
+            font-size: 11px;
             color: #aaaaaa;
             margin-bottom: 2px;
             letter-spacing: 1px;
@@ -144,7 +145,8 @@
 
         #user-id {
             font-family: monospace;
-            font-size: 16px; /* 28px -> 16px に縮小してバランス調整 */
+            /* ★サイズ22px */
+            font-size: 22px;
             color: #ffffff;
             letter-spacing: 2px;
             font-weight: bold;
@@ -182,52 +184,61 @@
 </div>
 
 <script>
-    // ==========================================
-    //  画面サイズに合わせて最大化するロジック
-    // ==========================================
     function adjustLayout() {
         const card = document.getElementById('card');
-        const windowWidth = window.innerWidth;
-        const windowHeight = window.innerHeight;
 
-        // カードの基本サイズ
-        const cardBaseWidth = 560;
-        const cardBaseHeight = 320;
+        // 画面サイズ取得
+        const w = window.innerWidth;
+        const h = window.innerHeight;
 
-        // スマホ縦持ち判定 (幅 < 高さ)
-        const isPortrait = windowWidth < windowHeight;
+        // カード基準サイズ (640px)
+        const cw = 640;
+        const ch = 320;
+
+        // 縦持ち判定 (幅 < 高さ)
+        const isPortrait = w < h;
 
         if (isPortrait) {
-            // === スマホ縦向き：90度回転して最大化 ===
-            const margin = 0.92;
-            const scaleW = (windowWidth * margin) / cardBaseHeight;
-            const scaleH = (windowHeight * margin) / cardBaseWidth;
+            // ===============================================
+            //  【縦持ち時】 強制的に90度回転させて画面いっぱいに表示
+            // ===============================================
+
+            // 回転後のカードの幅(cw) が 画面の高さ(h) にフィットするように
+            // 回転後のカードの高さ(ch) が 画面の幅(w) にフィットするように
+
+            const margin = 0.94; // 少し余白
+            const scaleW = (h * margin) / cw; // 画面の高さをカードの幅として使う
+            const scaleH = (w * margin) / ch; // 画面の幅をカードの高さとして使う
+
             const scale = Math.min(scaleW, scaleH);
 
             card.style.transform = `rotate(90deg) scale(${scale})`;
+
         } else {
-            // === PC・スマホ横向き：そのまま表示 ===
-            const margin = 0.95;
-            const scaleW = (windowWidth * margin) / cardBaseWidth;
-            const scaleH = (windowHeight * margin) / cardBaseHeight;
+            // ===============================================
+            //  【横持ち時】 通常表示（回転なし）
+            // ===============================================
+            // スマホを横にした時は、普通にフィットさせる
+
+            const margin = 0.94;
+            const scaleW = (w * margin) / cw;
+            const scaleH = (h * margin) / ch;
+
+            // PCなどで拡大しすぎないよう上限キャップ(1.5倍)
             let scale = Math.min(scaleW, scaleH);
-            if (scale > 1.2) scale = 1.2;
+            if(scale > 1.5) scale = 1.5;
 
             card.style.transform = `rotate(0deg) scale(${scale})`;
         }
 
-        // 計算が終わったら表示
         card.style.opacity = 1;
     }
 
-    // 読み込み時とリサイズ時に調整実行
+    // 読み込み時・リサイズ時（スマホ回転時）に実行
     window.addEventListener('load', adjustLayout);
     window.addEventListener('resize', adjustLayout);
 
-
-    // ==========================================
-    //  データ取得ロジック (変更なし)
-    // ==========================================
+    // データ取得処理（変更なし）
     const pathParts = window.location.pathname.split('/');
     const cid = pathParts[pathParts.length - 1];
     const userIdElement = document.getElementById('user-id');
