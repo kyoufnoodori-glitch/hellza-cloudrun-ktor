@@ -18,7 +18,7 @@
             justify-content: center;
             align-items: center;
 
-            /* 画面サイズ固定（スクロール禁止） */
+            /* スクロール禁止・画面サイズ固定 */
             width: 100vw;
             height: 100vh;
             height: 100dvh;
@@ -27,36 +27,38 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* ================= カードコンテナ ================= */
-        /* 回転の基準となる箱 */
-        #rotator {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: transform 0.4s ease; /* 回転時のアニメーション */
+        /* ================= 仮想ステージ（カードの基準） ================= */
+        /* ここが最重要ポイントです。
+           スマホの実際のサイズに関係なく、常に「960px × 540px」の
+           巨大なキャンバスとしてレイアウトを作ります。
+           JSでこれを画面サイズに合わせて縮小して表示させます。
+        */
+        #stage {
+            width: 960px;
+            height: 540px;
+
+            position: relative;
+            background-color: #000; /* 背景漏れ対策 */
+
+            /* 初期状態は透明 */
+            opacity: 0;
+            transition: opacity 0.3s ease;
+
+            /* 基準点を中心に */
+            transform-origin: center center;
         }
 
         /* ================= カード本体 ================= */
         .card {
-            /* ベースサイズ (640px x 320px) */
-            width: 640px;
-            height: 320px;
+            width: 100%;
+            height: 100%;
 
-            /* 相対配置 */
-            position: relative;
-
-            /* デザイン */
-            border-radius: 20px;
-            /* 影を強めにして浮遊感を出す */
-            box-shadow: 0 0 50px rgba(255, 0, 0, 0.4);
-            border: 3px solid #ff3366;
+            border-radius: 30px; /* 少し丸みを強く */
+            box-shadow: 0 0 60px rgba(255, 0, 0, 0.5); /* 発光感 */
+            border: 4px solid #ff3366;
             overflow: hidden;
-
-            /* 初期は透明（サイズ計算後に表示） */
-            opacity: 0;
-            transition: opacity 0.2s ease;
+            position: relative;
+            box-sizing: border-box;
         }
 
         /* 背景画像 */
@@ -68,108 +70,109 @@
             height: 100%;
             background-image: url('/assets/members_bg.png');
             background-size: cover;
-            /* 下揃え（キャラ切れ防止） */
-            background-position: bottom center;
-            filter: brightness(0.8);
+            background-position: bottom center; /* 下揃え */
+            filter: brightness(0.85);
             z-index: 0;
         }
 
-        /* ================= コンテンツ ================= */
-        .content {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            height: 100%;
-        }
+        /* ================= コンテンツ（位置はpx固定） ================= */
+        /* 仮想ステージ(960x540)に対する固定配置なので、
+           スマホで見てもPCで見てもバランスは絶対崩れません。
+        */
 
-        /* 左上：グループ名 */
+        /* 1. 左上：ロゴ */
         .header {
             position: absolute;
-            top: 25px;
-            left: 30px;
+            top: 40px;
+            left: 50px;
             text-align: left;
+            z-index: 2;
         }
 
         .group-name {
-            font-size: 32px;
+            font-size: 56px; /* 960px基準なので大きく設定 */
             font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             background: linear-gradient(to right, #fff, #ff3366);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.8));
         }
 
         .card-title {
-            font-size: 14px;
+            font-size: 20px;
             color: #ff99cc;
-            letter-spacing: 2px;
+            letter-spacing: 4px;
             margin-top: 5px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            font-weight: bold;
         }
 
-        /* 中央：ポイント表示 */
+        /* 2. 中央：ポイント */
         .points-container {
             position: absolute;
-            top: 50%;
+            top: 52%; /* 少し下寄りの方がバランスが良い */
             left: 50%;
             transform: translate(-50%, -50%);
             text-align: center;
+            z-index: 2;
             width: 100%;
         }
 
         .points-label {
-            font-size: 16px;
-            color: #cccccc;
-            margin-bottom: 5px;
-            letter-spacing: 2px;
+            font-size: 24px;
+            color: #dddddd;
+            margin-bottom: 0px;
+            letter-spacing: 4px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.9);
+            font-weight: bold;
         }
 
         .points-value {
-            font-size: 80px;
+            font-size: 140px; /* インパクト重視 */
             line-height: 1;
             font-weight: 900;
             color: #ffffff;
-            text-shadow: 0 0 20px #ff0000, 0 0 10px #ff3366, 2px 2px 0px #000;
+            text-shadow: 0 0 30px #ff0000, 0 0 15px #ff3366, 4px 4px 0px #000;
+            font-family: sans-serif; /* 数字が見やすいフォント */
         }
 
         .points-unit {
-            font-size: 24px;
+            font-size: 40px;
             color: #ff3366;
-            margin-left: 5px;
-            text-shadow: 1px 1px 0 #000;
+            margin-left: 10px;
+            text-shadow: 2px 2px 0 #000;
         }
 
-        /* 右上：会員ID */
+        /* 3. 右上：会員ID */
         .id-container {
             position: absolute;
-            top: 25px;
-            right: 30px;
+            top: 45px;
+            right: 50px;
             text-align: right;
+            z-index: 2;
         }
 
         .id-label {
-            font-size: 11px;
-            color: #aaaaaa;
-            margin-bottom: 2px;
-            letter-spacing: 1px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            font-size: 16px;
+            color: #cccccc;
+            margin-bottom: 4px;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.8);
         }
 
         #user-id {
             font-family: monospace;
-            /* サイズ14px */
-            font-size: 22px;
+            font-size: 28px; /* 960px基準での28pxなので、スマホでは程よく小さくなります */
             color: #ffffff;
-            letter-spacing: 2px;
+            letter-spacing: 3px;
             font-weight: bold;
             text-shadow: 0 0 10px rgba(255, 255, 255, 0.5), 2px 2px 4px rgba(0,0,0,0.8);
         }
 
         .loading {
-            font-size: 24px;
+            font-size: 40px;
             animation: blink 0.8s infinite alternate;
         }
         @keyframes blink { from { opacity: 0.3; } to { opacity: 1.0; } }
@@ -177,97 +180,98 @@
     </style>
 </head>
 <body>
-<div id="rotator">
-    <div class="card" id="card">
+
+<div id="stage">
+    <div class="card">
         <div class="card-bg"></div>
-        <div class="content">
-            <div class="header">
-                <div class="group-name">Hellzapoppin'</div>
-                <div class="card-title">OFFICIAL MEMBER'S CARD</div>
-            </div>
-            <div class="id-container">
-                <div class="id-label">MEMBER ID</div>
-                <div id="user-id">Checking...</div>
-            </div>
-            <div class="points-container">
-                <div class="points-label">CURRENT POINTS</div>
-                <div class="points-value" id="points-display">
-                    <span class="loading">Loading...</span>
-                </div>
+
+        <div class="header">
+            <div class="group-name">HELLZAPOPPIN'</div>
+            <div class="card-title">OFFICIAL MEMBER'S CARD</div>
+        </div>
+
+        <div class="id-container">
+            <div class="id-label">MEMBER ID</div>
+            <div id="user-id">Checking...</div>
+        </div>
+
+        <div class="points-container">
+            <div class="points-label">CURRENT POINTS</div>
+            <div class="points-value" id="points-display">
+                <span class="loading">Loading...</span>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    /* 【最強のレイアウト固定ロジック】
+       1. 960x540のステージを作る
+       2. 画面サイズを取得する
+       3. 縦持ちなら「90度回転」させる
+       4. 画面に「収まる（contain）」ように倍率を計算して縮小する
+
+       → これにより、どんな画面でも絶対にレイアウトが崩れません。
+    */
     function adjustLayout() {
-        const rotator = document.getElementById('rotator');
-        const card = document.getElementById('card');
+        const stage = document.getElementById('stage');
 
         // 現在の画面サイズ
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const screenW = window.innerWidth;
+        const screenH = window.innerHeight;
 
-        // カードの基準サイズ
-        const cw = 640;
-        const ch = 320;
+        // ステージの固定サイズ
+        const stageW = 960;
+        const stageH = 540;
 
         // 縦持ち判定
-        const isPortrait = w < h;
+        const isPortrait = screenW < screenH;
 
         let scale = 1;
+        let rotation = 0;
 
         if (isPortrait) {
-            // ===================================
-            // 【縦持ち時】 強制的に90度回転
-            // ===================================
+            // === 縦持ちモード ===
+            // 90度回転させる
+            rotation = 90;
 
-            // 1. コンテナを90度回転
-            rotator.style.transform = `rotate(90deg)`;
+            // 回転後の幅 ＝ ステージの高さ(540) → これを画面の幅(screenW)に合わせる
+            // 回転後の高さ ＝ ステージの幅(960) → これを画面の高さ(screenH)に合わせる
 
-            // 2. 縦画面の「高さ(h)」が、カードの「幅」になる
-            // 3. 縦画面の「幅(w)」が、カードの「高さ」になる
-            // これに収まるようにスケール計算
+            // 画面からはみ出さないように、小さい方の倍率を採用する (Contain)
+            const scaleX = screenW / stageH;
+            const scaleY = screenH / stageW;
+            scale = Math.min(scaleX, scaleY);
 
-            const margin = 0.96; // 画面端ギリギリまで使う
-            const scaleW = (h * margin) / cw;
-            const scaleH = (w * margin) / ch;
-
-            // はみ出さない最大のサイズを採用
-            scale = Math.min(scaleW, scaleH);
+            // ※もし「画面いっぱいに広げて、端が切れてもいい」なら Math.max にします
+            // 今回は「Bのように綺麗に見せる」ため Math.min（全体表示）を採用
 
         } else {
-            // ===================================
-            // 【横持ち時】 通常表示
-            // ===================================
-            rotator.style.transform = `rotate(0deg)`;
+            // === 横持ちモード ===
+            rotation = 0;
 
-            const margin = 0.96;
-            const scaleW = (w * margin) / cw;
-            const scaleH = (h * margin) / ch;
-
-            scale = Math.min(scaleW, scaleH);
-            if(scale > 1.2) scale = 1.2; // PCなどでデカすぎ防止
+            // そのまま合わせる
+            const scaleX = screenW / stageW;
+            const scaleY = screenH / stageH;
+            scale = Math.min(scaleX, scaleY);
         }
 
-        // カード自体に拡大縮小を適用
-        card.style.transform = `scale(${scale})`;
+        // CSS変形を適用
+        // translate(-50%, -50%) はCSS側で flex center しているので不要な場合もあるが、
+        // 回転軸のズレを防ぐために body flex + ここでの transform が安定する
+        stage.style.transform = `rotate(${rotation}deg) scale(${scale})`;
 
-        // 表示
-        card.style.opacity = 1;
+        // 表示開始
+        stage.style.opacity = 1;
     }
 
     // イベント監視
     window.addEventListener('load', adjustLayout);
     window.addEventListener('resize', adjustLayout);
-    // iOSで回転した時の対策
-    window.addEventListener('orientationchange', () => {
-        setTimeout(adjustLayout, 100);
-    });
+    window.addEventListener('orientationchange', () => { setTimeout(adjustLayout, 100); });
 
-    // ---------------------------------------------
-    // データ取得ロジック（変更なし）
-    // ---------------------------------------------
+
+    // ================= データ取得処理 =================
     const pathParts = window.location.pathname.split('/');
     const cid = pathParts[pathParts.length - 1];
     const userIdElement = document.getElementById('user-id');
@@ -280,7 +284,7 @@
 
     async function fetchPoints() {
         if (!cid || cid === 'c') {
-            document.getElementById('points-display').innerHTML = '<span style="font-size:24px">ERROR</span>';
+            document.getElementById('points-display').innerHTML = '<span style="font-size:60px">ERROR</span>';
             return;
         }
         try {
@@ -292,11 +296,11 @@
                 document.getElementById('points-display').innerHTML =
                     `${formattedPoint}<span class="points-unit">pt</span>`;
             } else {
-                document.getElementById('points-display').innerHTML = '<span style="font-size:24px">ERROR</span>';
+                document.getElementById('points-display').innerHTML = '<span style="font-size:60px">ERROR</span>';
             }
         } catch (e) {
             console.error(e);
-            document.getElementById('points-display').innerHTML = '<span style="font-size:24px">OFFLINE</span>';
+            document.getElementById('points-display').innerHTML = '<span style="font-size:60px">OFFLINE</span>';
         }
     }
     fetchPoints();
