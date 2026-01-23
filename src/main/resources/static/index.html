@@ -13,35 +13,50 @@
             color: #ffffff;
             font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
 
-            /* 中央配置 */
+            /* 画面中央配置 */
             display: flex;
             justify-content: center;
             align-items: center;
 
-            /* 画面サイズ確保 */
+            /* 画面サイズ固定（スクロール禁止） */
             width: 100vw;
             height: 100vh;
-            height: 100dvh; /* モバイル用 */
-
+            height: 100dvh;
             overflow: hidden;
+
             -webkit-tap-highlight-color: transparent;
+        }
+
+        /* ================= カードコンテナ ================= */
+        /* 回転の基準となる箱 */
+        #rotator {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.4s ease; /* 回転時のアニメーション */
         }
 
         /* ================= カード本体 ================= */
         .card {
-            /* ★640pxに戻しました */
+            /* ベースサイズ (640px x 320px) */
             width: 640px;
             height: 320px;
 
-            border-radius: 20px;
-            box-shadow: 0 20px 50px rgba(255, 0, 0, 0.3);
+            /* 相対配置 */
             position: relative;
-            overflow: hidden;
-            border: 3px solid #ff3366;
 
-            /* JSで計算が終わるまで隠す */
+            /* デザイン */
+            border-radius: 20px;
+            /* 影を強めにして浮遊感を出す */
+            box-shadow: 0 0 50px rgba(255, 0, 0, 0.4);
+            border: 3px solid #ff3366;
+            overflow: hidden;
+
+            /* 初期は透明（サイズ計算後に表示） */
             opacity: 0;
-            transition: opacity 0.3s ease; /* 回転時のチラつき防止のため少し早めに */
+            transition: opacity 0.2s ease;
         }
 
         /* 背景画像 */
@@ -145,7 +160,7 @@
 
         #user-id {
             font-family: monospace;
-            /* ★サイズ22px */
+            /* サイズ14px */
             font-size: 22px;
             color: #ffffff;
             letter-spacing: 2px;
@@ -162,22 +177,23 @@
     </style>
 </head>
 <body>
-
-<div class="card" id="card">
-    <div class="card-bg"></div>
-    <div class="content">
-        <div class="header">
-            <div class="group-name">Hellzapoppin'</div>
-            <div class="card-title">OFFICIAL MEMBER'S CARD</div>
-        </div>
-        <div class="id-container">
-            <div class="id-label">MEMBER ID</div>
-            <div id="user-id">Checking...</div>
-        </div>
-        <div class="points-container">
-            <div class="points-label">CURRENT POINTS</div>
-            <div class="points-value" id="points-display">
-                <span class="loading">Loading...</span>
+<div id="rotator">
+    <div class="card" id="card">
+        <div class="card-bg"></div>
+        <div class="content">
+            <div class="header">
+                <div class="group-name">Hellzapoppin'</div>
+                <div class="card-title">OFFICIAL MEMBER'S CARD</div>
+            </div>
+            <div class="id-container">
+                <div class="id-label">MEMBER ID</div>
+                <div id="user-id">Checking...</div>
+            </div>
+            <div class="points-container">
+                <div class="points-label">CURRENT POINTS</div>
+                <div class="points-value" id="points-display">
+                    <span class="loading">Loading...</span>
+                </div>
             </div>
         </div>
     </div>
@@ -185,60 +201,73 @@
 
 <script>
     function adjustLayout() {
+        const rotator = document.getElementById('rotator');
         const card = document.getElementById('card');
 
-        // 画面サイズ取得
+        // 現在の画面サイズ
         const w = window.innerWidth;
         const h = window.innerHeight;
 
-        // カード基準サイズ (640px)
+        // カードの基準サイズ
         const cw = 640;
         const ch = 320;
 
-        // 縦持ち判定 (幅 < 高さ)
+        // 縦持ち判定
         const isPortrait = w < h;
 
+        let scale = 1;
+
         if (isPortrait) {
-            // ===============================================
-            //  【縦持ち時】 強制的に90度回転させて画面いっぱいに表示
-            // ===============================================
+            // ===================================
+            // 【縦持ち時】 強制的に90度回転
+            // ===================================
 
-            // 回転後のカードの幅(cw) が 画面の高さ(h) にフィットするように
-            // 回転後のカードの高さ(ch) が 画面の幅(w) にフィットするように
+            // 1. コンテナを90度回転
+            rotator.style.transform = `rotate(90deg)`;
 
-            const margin = 0.94; // 少し余白
-            const scaleW = (h * margin) / cw; // 画面の高さをカードの幅として使う
-            const scaleH = (w * margin) / ch; // 画面の幅をカードの高さとして使う
+            // 2. 縦画面の「高さ(h)」が、カードの「幅」になる
+            // 3. 縦画面の「幅(w)」が、カードの「高さ」になる
+            // これに収まるようにスケール計算
 
-            const scale = Math.min(scaleW, scaleH);
+            const margin = 0.96; // 画面端ギリギリまで使う
+            const scaleW = (h * margin) / cw;
+            const scaleH = (w * margin) / ch;
 
-            card.style.transform = `rotate(90deg) scale(${scale})`;
+            // はみ出さない最大のサイズを採用
+            scale = Math.min(scaleW, scaleH);
 
         } else {
-            // ===============================================
-            //  【横持ち時】 通常表示（回転なし）
-            // ===============================================
-            // スマホを横にした時は、普通にフィットさせる
+            // ===================================
+            // 【横持ち時】 通常表示
+            // ===================================
+            rotator.style.transform = `rotate(0deg)`;
 
-            const margin = 0.94;
+            const margin = 0.96;
             const scaleW = (w * margin) / cw;
             const scaleH = (h * margin) / ch;
 
-            // PCなどで拡大しすぎないよう上限キャップ(1.5倍)
-            let scale = Math.min(scaleW, scaleH);
-            if(scale > 1.5) scale = 1.5;
-
-            card.style.transform = `rotate(0deg) scale(${scale})`;
+            scale = Math.min(scaleW, scaleH);
+            if(scale > 1.2) scale = 1.2; // PCなどでデカすぎ防止
         }
 
+        // カード自体に拡大縮小を適用
+        card.style.transform = `scale(${scale})`;
+
+        // 表示
         card.style.opacity = 1;
     }
 
-    // 読み込み時・リサイズ時（スマホ回転時）に実行
+    // イベント監視
     window.addEventListener('load', adjustLayout);
     window.addEventListener('resize', adjustLayout);
+    // iOSで回転した時の対策
+    window.addEventListener('orientationchange', () => {
+        setTimeout(adjustLayout, 100);
+    });
 
-    // データ取得処理（変更なし）
+    // ---------------------------------------------
+    // データ取得ロジック（変更なし）
+    // ---------------------------------------------
     const pathParts = window.location.pathname.split('/');
     const cid = pathParts[pathParts.length - 1];
     const userIdElement = document.getElementById('user-id');
