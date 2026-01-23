@@ -32,6 +32,9 @@ dependencies {
     // Firestore
     implementation("com.google.cloud:google-cloud-firestore:3.35.0")
 
+    // ★これを追加: Firebase Admin SDK
+    implementation("com.google.firebase:firebase-admin:9.2.0")
+
     testImplementation(kotlin("test"))
 }
 

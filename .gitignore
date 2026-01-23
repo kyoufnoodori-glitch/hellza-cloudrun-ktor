@@ -73,3 +73,7 @@ node_modules/
 .idea/ 
 *.iml 
 local.properties 
+src/main/resources/service-account.json
+src/main/resources/service-account.json
+src/main/resources/service-account.json
+src/main/resources/service-account.json

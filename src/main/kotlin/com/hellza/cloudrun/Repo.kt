@@ -1,117 +1,101 @@
 package com.hellza.cloudrun
 
-import com.google.cloud.Timestamp
-import com.google.cloud.firestore.Firestore
-import com.google.cloud.firestore.FirestoreOptions
-import com.google.cloud.firestore.SetOptions
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
+import com.google.auth.oauth2.GoogleCredentials
+import com.google.firebase.FirebaseApp
+import com.google.firebase.FirebaseOptions
+import com.google.firebase.cloud.FirestoreClient
 import kotlinx.serialization.Serializable
-import java.time.Instant
+import java.io.InputStream
 
-// --- DTO定義 (SyncDtosの中身をここに統合) ---
-@Serializable
-data class SyncEventDto(
-    @SerialName("event_id") val eventId: String,
-    val timestamp: String = "",
-    val type: String = "",
-    @SerialName("card_id") val cardId: String? = null,
-    val delta: Int? = null,
-    @SerialName("new_point") val newPoint: Int? = null,
-    @SerialName("tag_uid") val tagUid: String? = null
-)
-
-@Serializable
-data class ApplyResult(
-    val acceptedIds: List<String>,
-    val duplicateIds: List<String>,
-    val invalidIds: List<String>
-)
-
-// --- リポジトリ実装 ---
+/**
+ * Firestore接続版リポジトリ
+ * src/main/resources/service-account.json を読み込んで接続します。
+ */
 class Repo {
-    private val db: Firestore by lazy {
-        FirestoreOptions.getDefaultInstance().service
+
+    // Firestoreデータベースのインスタンス
+    private val db by lazy {
+        FirestoreClient.getFirestore()
     }
 
-    suspend fun getCardView(cid: String): CardView? = withContext(Dispatchers.IO) {
-        val doc = db.collection("cards").document(cid).get().get()
-        if (!doc.exists()) return@withContext null
+    init {
+        // Firebaseの初期化 (アプリ起動時に1回だけ実行)
+        if (FirebaseApp.getApps().isEmpty()) {
+            try {
+                // resourcesフォルダから鍵ファイルを読み込む
+                val serviceAccount: InputStream = this::class.java.getResourceAsStream("/service-account.json")
+                    ?: throw RuntimeException("service-account.json not found in resources!")
 
-        val point = (doc.getLong("point") ?: 0L).toInt()
-        val updatedAtIso = doc.getTimestamp("updatedAt")?.let { ts ->
-            Instant.ofEpochSecond(ts.seconds, ts.nanos.toLong()).toString()
-        } ?: doc.getString("updatedAt") ?: ""
+                val options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                    .build()
 
-        CardView(cid, point, updatedAtIso)
+                FirebaseApp.initializeApp(options)
+                println("Firebase Initialized successfully.")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                println("Firebase Init Failed: ${e.message}")
+            }
+        }
     }
 
-    suspend fun getPinHash(cid: String): String? = withContext(Dispatchers.IO) {
-        val doc = db.collection("cards").document(cid).get().get()
-        if (!doc.exists()) return@withContext null
-        doc.getString("pinHash")
+    /**
+     * PIN登録 (管理者用)
+     * ドキュメントが存在しなければ作成、あればPINのみ更新（ポイント維持）
+     */
+    fun forceSetPin(cid: String, pinHash: String, initialPoint: Int) {
+        val docRef = db.collection("cards").document(cid)
+        val snapshot = docRef.get().get()
+
+        val data = HashMap<String, Any>()
+        data["cid"] = cid
+        data["pinHash"] = pinHash
+        data["updatedAt"] = System.currentTimeMillis()
+
+        if (!snapshot.exists()) {
+            // 新規作成時はポイントを入れる
+            data["point"] = initialPoint
+        }
+        // マージ更新（既存のポイントなどは消さない）
+        docRef.set(data, com.google.cloud.firestore.SetOptions.merge())
     }
 
-    // 管理者用：強制上書き保存
-    suspend fun forceSetPin(cid: String, pinHash: String, point: Int) {
-        withContext(Dispatchers.IO) {
-            val data = mapOf(
-                "pinHash" to pinHash,
-                "point" to point,
-                "updatedAt" to Timestamp.now()
-            )
-            db.collection("cards").document(cid).set(data, SetOptions.merge()).get()
+    /**
+     * ポイント更新 (アプリからの同期用)
+     */
+    fun updatePoint(cid: String, newPoint: Int, updatedAt: Long) {
+        val docRef = db.collection("cards").document(cid)
+
+        val data = mapOf(
+            "cid" to cid,
+            "point" to newPoint,
+            "updatedAt" to updatedAt
+        )
+        // mergeにより、未登録カードでも自動で作られ、PIN設定済みの場合はPINを消さずに更新できる
+        docRef.set(data, com.google.cloud.firestore.SetOptions.merge())
+        println("Firestore: Updated $cid -> $newPoint")
+    }
+
+    fun getPinHash(cid: String): String? {
+        val snapshot = db.collection("cards").document(cid).get().get()
+        return if (snapshot.exists()) {
+            snapshot.getString("pinHash")
+        } else {
+            null
         }
     }
 
-    // 同期イベント処理
-    suspend fun applyEvents(events: List<SyncEventDto>): ApplyResult = withContext(Dispatchers.IO) {
-        val accepted = mutableListOf<String>()
-        val duplicate = mutableListOf<String>()
-        val invalid = mutableListOf<String>()
-
-        for (e in events) {
-            val eventId = e.eventId.trim()
-            val cid = (e.cardId ?: "").trim()
-            val delta = e.delta
-
-            if (eventId.isBlank() || cid.isBlank() || delta == null) {
-                invalid.add(eventId.ifBlank { "(missing)" })
-                continue
-            }
-
-            val eventRef = db.collection("events").document(eventId)
-            val cardRef = db.collection("cards").document(cid)
-
-            val ok = db.runTransaction { tx ->
-                if (tx.get(eventRef).get().exists()) return@runTransaction "duplicate"
-
-                val cardSnap = tx.get(cardRef).get()
-                val currentPoint = if (cardSnap.exists()) (cardSnap.getLong("point") ?: 0L).toInt() else 0
-                val newPoint = currentPoint + delta
-
-                if (cardSnap.exists()) {
-                    tx.update(cardRef, mapOf("point" to newPoint, "updatedAt" to Timestamp.now()))
-                } else {
-                    tx.set(cardRef, mapOf("point" to newPoint, "updatedAt" to Timestamp.now(), "pinHash" to ""))
-                }
-
-                tx.set(eventRef, mapOf(
-                    "cardId" to cid,
-                    "delta" to delta,
-                    "timestamp" to e.timestamp,
-                    "createdAt" to Timestamp.now()
-                ))
-                "accepted"
-            }.get()
-
-            when (ok) {
-                "accepted" -> accepted.add(eventId)
-                "duplicate" -> duplicate.add(eventId)
-                else -> invalid.add(eventId)
-            }
+    /**
+     * Web表示用のデータを返す
+     */
+    fun getCardView(cid: String): CardView? {
+        val snapshot = db.collection("cards").document(cid).get().get()
+        return if (snapshot.exists()) {
+            val pt = snapshot.getLong("point")?.toInt() ?: 0
+            val ts = snapshot.getLong("updatedAt") ?: 0L
+            CardView(cid, pt, ts)
+        } else {
+            null
         }
-        ApplyResult(accepted, duplicate, invalid)
     }
 }

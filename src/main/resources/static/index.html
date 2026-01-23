@@ -2,210 +2,147 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Hellzapoppin' Member's Card</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Hellzapoppin' Point</title>
     <style>
-        /* ================= ベース設定 ================= */
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #000;
-            width: 100vw;
-            height: 100dvh; /* モバイルのアドレスバー考慮 */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
-            font-family: 'Arial Black', sans-serif;
+        body { margin: 0; padding: 0; background-color: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; }
+
+        /* カード表示エリア */
+        #card-container { display: none; position: relative; width: 100%; max-width: 600px; aspect-ratio: 2160/1360; }
+        #card-bg { width: 100%; height: 100%; object-fit: contain; }
+
+        .card-text { position: absolute; font-weight: bold; }
+        /* ID表示位置（右上の白枠） */
+        #display-id { top: 7%; right: 5%; color: #000; font-size: 3vw; }
+        /* ポイント表示位置（中央の枠） */
+        #display-pt {
+            top: 25%; left: 17%; width: 53%; height: 35%;
+            display: flex; justify-content: flex-end; align-items: center;
+            font-size: 15vw; color: #333; padding-right: 5%; box-sizing: border-box;
         }
 
-        /* ================= カードのコンテナ ================= */
-        /* ここが新しい考え方です。
-           カード自体を「コンテナ」として定義し、中身はこの箱のサイズだけを見て
-           文字サイズなどを自動決定します。画面サイズは気にしません。 */
-        .card-container {
-            /* 横縦比 16:9 に固定 (画像Bの比率) */
-            aspect-ratio: 16 / 9;
-            
-            /* ベースのデザイン */
-            background-image: url('/assets/members_bg.png');
-            background-size: cover;
-            background-position: center bottom;
-            border-radius: 5cqw; /* 角丸も相対サイズに */
-            border: 0.8cqw solid #ff3366; /* 枠線の太さも相対サイズ */
-            box-shadow: 0 0 10cqw rgba(255, 0, 0, 0.4);
-            
-            /* コンテナクエリの魔法を有効化 */
-            container-type: size;
-            position: relative;
-            overflow: hidden;
-            
-            /* デフォルト（PC・横持ち）の設定 */
-            width: 95vw; /* 画面幅の95% */
-            max-height: 95vh; /* ただし画面高さからはみ出さない */
+        /* PIN入力モーダル */
+        #pin-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-
-        /* ================= 縦持ち（Portrait）時の強制回転 ================= */
-        @media (orientation: portrait) {
-            .card-container {
-                /* 幅と高さを入れ替えるような設定 */
-                width: 95vh;  /* 画面の「高さ」をカードの幅として使う */
-                max-width: none;
-                max-height: 95vw; /* 画面の「幅」をカードの高さ制限にする */
-                
-                /* 90度回転させて中央配置 */
-                transform: rotate(90deg);
-            }
+        .pin-display {
+            font-size: 40px; letter-spacing: 10px; margin-bottom: 30px;
+            border-bottom: 2px solid #555; padding: 10px; width: 200px; text-align: center; height: 50px;
         }
-
-        /* ================= 中身のレイアウト (すべて cqw 単位) ================= */
-        /* cqw = Container Query Width (コンテナの幅の1%) 
-           これを使うと、カードが拡大縮小してもレイアウトが絶対に崩れません。 */
-
-        /* テキストの影共通 */
-        .text-shadow {
-            filter: drop-shadow(0 0.2cqw 0.4cqw rgba(0,0,0,0.9));
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .num-btn {
+            width: 70px; height: 70px; border-radius: 50%; border: 2px solid #555;
+            background: #222; color: #fff; font-size: 24px;
+            display: flex; justify-content: center; align-items: center; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
         }
-
-        /* 1. ロゴ (左上) */
-        .header {
-            position: absolute;
-            top: 8%;
-            left: 5%;
-            text-align: left;
-        }
-        .group-name {
-            font-size: 5.5cqw; /* 幅の5.5%の大きさ */
-            font-weight: 900;
-            background: linear-gradient(to right, #fff 20%, #ff3366 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-            line-height: 1;
-        }
-        .card-title {
-            font-size: 2cqw;
-            color: #ff99cc;
-            letter-spacing: 0.3cqw;
-            margin-top: 1cqw;
-        }
-
-        /* 2. ID (右上) */
-        .id-container {
-            position: absolute;
-            top: 8%;
-            right: 5%;
-            text-align: right;
-        }
-        .id-label {
-            font-size: 1.5cqw;
-            color: #cccccc;
-            margin-bottom: 0.5cqw;
-        }
-        #user-id {
-            font-family: monospace;
-            font-size: 3.5cqw; /* IDの文字サイズ */
-            color: #fff;
-            letter-spacing: 0.2cqw;
-            font-weight: bold;
-        }
-
-        /* 3. ポイント (中央) */
-        .points-container {
-            position: absolute;
-            top: 55%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            width: 100%;
-        }
-        .points-label {
-            font-size: 2.2cqw;
-            color: #ddd;
-            letter-spacing: 0.5cqw;
-            margin-bottom: -1cqw; /* 数字との距離を詰める */
-            font-weight: bold;
-        }
-        .points-value {
-            font-size: 16cqw; /* 超巨大文字 */
-            line-height: 1.1;
-            font-weight: 900;
-            color: #fff;
-            text-shadow: 0 0 3cqw rgba(255, 0, 0, 0.8), 0 0 1cqw #fff;
-        }
-        .points-unit {
-            font-size: 4cqw;
-            color: #ff3366;
-            margin-left: 1cqw;
-        }
-
-        /* ローディングアニメ */
-        .loading {
-            font-size: 5cqw;
-            animation: blink 0.8s infinite alternate;
-        }
-        @keyframes blink { from { opacity: 0.3; } to { opacity: 1.0; } }
-
+        .num-btn:active { background: #555; }
+        .msg { color: #ff4444; height: 20px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<div class="card-container text-shadow">
+<div id="card-container">
+    <img id="card-bg" src="/assets/card_normal_2.png" alt="card">
+    <div id="display-id" class="card-text">HP-......</div>
+    <div id="display-pt" class="card-text">---</div>
+</div>
 
-    <div class="header">
-        <div class="group-name">HELLZAPOPPIN'</div>
-        <div class="card-title">OFFICIAL MEMBER'S CARD</div>
-    </div>
-
-    <div class="id-container">
-        <div class="id-label">MEMBER ID</div>
-        <div id="user-id">Checking...</div>
-    </div>
-
-    <div class="points-container">
-        <div class="points-label">CURRENT POINTS</div>
-        <div class="points-value" id="points-display">
-            <span class="loading">...</span>
-        </div>
+<div id="pin-modal">
+    <div style="margin-bottom:20px; color:#aaa;">SECURITY CHECK</div>
+    <div class="msg" id="msg"></div>
+    <div class="pin-display" id="pin-val"></div>
+    <div class="numpad">
+        <div class="num-btn" onclick="tap(1)">1</div>
+        <div class="num-btn" onclick="tap(2)">2</div>
+        <div class="num-btn" onclick="tap(3)">3</div>
+        <div class="num-btn" onclick="tap(4)">4</div>
+        <div class="num-btn" onclick="tap(5)">5</div>
+        <div class="num-btn" onclick="tap(6)">6</div>
+        <div class="num-btn" onclick="tap(7)">7</div>
+        <div class="num-btn" onclick="tap(8)">8</div>
+        <div class="num-btn" onclick="tap(9)">9</div>
+        <div class="num-btn" style="border-color:transparent;" onclick="clearPin()">C</div>
+        <div class="num-btn" onclick="tap(0)">0</div>
+        <div class="num-btn" style="border-color:#1E8E3E; color:#4CAF50;" onclick="submitPin()">OK</div>
     </div>
 </div>
 
 <script>
-    // ================= データ取得処理 =================
-    // レイアウト調整のJSは全廃止しました。CSSだけで動きます。
-
+    // URLからIDを取得 (/c/HP-000001 -> HP-000001)
     const pathParts = window.location.pathname.split('/');
     const cid = pathParts[pathParts.length - 1];
-    const userIdElement = document.getElementById('user-id');
 
-    if (cid && cid !== 'c') {
-         userIdElement.textContent = cid.toUpperCase();
-    } else {
-         userIdElement.textContent = 'UNKNOWN';
+    let currentPin = "";
+
+    // 起動時：カード情報取得を試みる
+    fetchCard();
+
+    function tap(n) {
+        if(currentPin.length < 4) {
+            currentPin += n;
+            updateDisplay();
+        }
+    }
+    function clearPin() {
+        currentPin = "";
+        updateDisplay();
+        document.getElementById('msg').innerText = "";
+    }
+    function updateDisplay() {
+        let mask = "";
+        for(let i=0; i<currentPin.length; i++) mask += "●";
+        document.getElementById('pin-val').innerText = mask;
     }
 
-    async function fetchPoints() {
-        if (!cid || cid === 'c') {
-            document.getElementById('points-display').innerHTML = '<span style="font-size:5cqw">ERROR</span>';
-            return;
-        }
+    async function submitPin() {
+        if(currentPin.length < 4) return;
+        document.getElementById('msg').innerText = "Verifying...";
+
         try {
-            const response = await fetch(`/api/card?cid=${cid}`);
-            if (response.ok) {
-                const data = await response.json();
-                const point = data.point !== undefined ? data.point : 0;
-                const formattedPoint = point.toLocaleString();
-                document.getElementById('points-display').innerHTML =
-                    `${formattedPoint}<span class="points-unit">pt</span>`;
+            const res = await fetch('/api/pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cid: cid, pin: currentPin })
+            });
+            if(res.ok) {
+                // 成功したらリロードしてカード表示へ
+                location.reload();
             } else {
-                document.getElementById('points-display').innerHTML = '<span style="font-size:5cqw">ERROR</span>';
+                currentPin = "";
+                updateDisplay();
+                document.getElementById('msg').innerText = "PIN Error";
             }
-        } catch (e) {
-            console.error(e);
-            document.getElementById('points-display').innerHTML = '<span style="font-size:5cqw">OFFLINE</span>';
+        } catch(e) {
+            document.getElementById('msg').innerText = "Network Error";
         }
     }
-    fetchPoints();
+
+    async function fetchCard() {
+        try {
+            // ポイント情報取得 (Cookieがないと401エラーになる)
+            const res = await fetch(`/api/card?cid=${cid}`);
+            if (res.status === 401) {
+                // 認証エラー -> PIN画面を表示
+                document.getElementById('pin-modal').style.display = 'flex';
+                document.getElementById('card-container').style.display = 'none';
+            } else if (res.ok) {
+                // 成功 -> PIN画面を消してカード表示
+                const data = await res.json();
+                document.getElementById('pin-modal').style.display = 'none';
+                document.getElementById('card-container').style.display = 'block';
+
+                document.getElementById('display-id').innerText = data.cid;
+                document.getElementById('display-pt').innerText = data.point;
+            } else {
+                document.getElementById('msg').innerText = "Card Not Found";
+            }
+        } catch(e) {
+            console.error(e);
+        }
+    }
 </script>
 </body>
 </html>
