@@ -24,20 +24,19 @@ fun Application.module() {
         json(Json { ignoreUnknownKeys = true })
     }
 
-    val repo = Repo() // Repo.ktを使う
+    val repo = Repo()
     val pinSecret = System.getenv("HP_PIN_SECRET") ?: "dev-pin-secret"
 
-    // ★ここを修正: 変数名を adminTokenFromEnv にして、全体でこれを使うように統一
+    // ★管理者用トークン（Cloud Runの環境変数で設定したもの）
     val adminTokenFromEnv = System.getenv("HP_ADMIN_TOKEN") ?: "admin-token-very-long"
 
     routing {
-        // =========== 元々のAPI機能 ===========
+        // =========== API機能 ===========
 
         // 1. 管理者用：PIN設定
         post("/api/admin/setpin") {
+            // トークンチェック
             val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
-
-            // ★修正: 内側での再定義をやめ、外側の変数と比較する
             if (token != adminTokenFromEnv) {
                 return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
             }
@@ -74,34 +73,29 @@ fun Application.module() {
             call.respond(cardView)
         }
 
-        // ★追加: アプリからのログ同期（管理者用）
+        // ★4. 管理者用：ログ同期（ここが追加されました）
         post("/api/admin/syncEvents") {
-            // 認証チェック
             val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
             if (token != adminTokenFromEnv) {
                 return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
             }
 
             try {
-                // ★修正: 変数に入れずにデータを受け取る（警告対策）
+                // データを受け取る（今はログ捨て。警告回避のため変数には入れない）
                 call.receive<String>()
 
-                // 本来はここでデータを解析して保存するが、今はOKだけ返す
+                // 本来はここでDB保存などの処理
                 call.respond(OkResponse(true))
-            } catch (_: Exception) { // ★修正: 使わない変数は _ にする
+            } catch (_: Exception) {
                 call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid JSON format"))
             }
         }
 
-        // =========== Web画面を表示する機能 ===========
+        // =========== Web画面 ===========
 
-        // 4. app.js や styles.css
         staticResources("/c", "static")
-
-        // 5. 画像ファイル
         staticResources("/assets", "static/assets")
 
-        // 6. index.html 表示
         get("/c/{cid}") {
             val content = this::class.java.classLoader.getResource("static/index.html")?.readText()
             if (content != null) {
