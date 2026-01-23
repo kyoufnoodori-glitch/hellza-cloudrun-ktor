@@ -2,10 +2,177 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Hello Hellza</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hellzapoppin' Member's Card</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a; /* 全体の背景：ダークグレー */
+            color: white;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* カード本体のデザイン */
+        .card {
+            width: 320px;
+            height: 500px;
+            background: linear-gradient(135deg, #ff00cc, #333399); /* 仮の背景グラデーション */
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        /* アイドル画像の背景（assetsフォルダに画像を入れると表示されます） */
+        .card-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            /* background-image: url('/assets/members_bg.png'); */
+            background-size: cover;
+            background-position: center;
+            opacity: 0.6; /* 文字を見やすくするため少し薄く */
+            z-index: 0;
+        }
+
+        .content {
+            position: relative;
+            z-index: 1; /* 背景より手前に表示 */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header {
+            margin-top: 20px;
+        }
+
+        .group-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .points-container {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .points-label {
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .points-value {
+            font-size: 48px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px #ff00cc;
+        }
+
+        .points-unit {
+            font-size: 18px;
+        }
+
+        .footer {
+            margin-bottom: 20px;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        #user-id {
+            font-family: monospace;
+            font-size: 16px;
+            letter-spacing: 1px;
+        }
+
+        /* 読み込み中の表示 */
+        .loading {
+            font-size: 14px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 <body>
-    <h1>カード表示画面</h1>
-    <p>ようこそ！</p>
+
+<div class="card">
+    <div class="card-bg"></div>
+
+    <div class="content">
+        <div class="header">
+            <div class="group-name">Hellzapoppin'</div>
+            <div style="font-size: 12px;">OFFICIAL MEMBER'S CARD</div>
+        </div>
+
+        <div class="points-container">
+            <div class="points-label">CURRENT POINTS</div>
+            <div class="points-value" id="points-display">
+                <span class="loading">Loading...</span>
+            </div>
+            <div class="points-label">POINTS</div>
+        </div>
+
+        <div class="footer">
+            <div>MEMBER ID</div>
+            <div id="user-id">Checking...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 1. URLからID (例: hellza01) を取得する
+    // URLが .../c/hellza01 なので、最後の部分を取り出す
+    const pathParts = window.location.pathname.split('/');
+    const cid = pathParts[pathParts.length - 1]; // "hellza01"
+
+    // 画面にIDを表示
+    document.getElementById('user-id').textContent = cid;
+
+    // 2. APIを叩いてポイントを取得する
+    async function fetchPoints() {
+        try {
+            // /api/card?cid=hellza01 にアクセス
+            const response = await fetch(`/api/card?cid=${cid}`);
+
+            if (response.ok) {
+                const data = await response.json();
+                // 取得したポイントを表示 (data.point がポイント数と想定)
+                // ※ Repo.ktの実装に合わせてプロパティ名は調整します
+                const point = data.point !== undefined ? data.point : 0;
+
+                document.getElementById('points-display').innerHTML =
+                    `${point}<span class="points-unit"> pt</span>`;
+            } else {
+                document.getElementById('points-display').textContent = "ERROR";
+            }
+        } catch (e) {
+            console.error(e);
+            document.getElementById('points-display').textContent = "OFFLINE";
+        }
+    }
+
+    // 実行
+    fetchPoints();
+</script>
 </body>
 </html>
