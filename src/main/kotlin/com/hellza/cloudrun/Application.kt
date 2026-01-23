@@ -4,7 +4,7 @@ import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.engine.*
-import io.ktor.server.http.content.* // ★ここを追加しました（staticResources用）
+import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
 import io.ktor.server.plugins.calllogging.*
 import io.ktor.server.plugins.contentnegotiation.*
@@ -26,18 +26,22 @@ fun Application.module() {
 
     val repo = Repo() // Repo.ktを使う
     val pinSecret = System.getenv("HP_PIN_SECRET") ?: "dev-pin-secret"
-    val adminToken = System.getenv("HP_ADMIN_TOKEN") ?: "admin-token-very-long"
+
+    // ★ここを修正: 変数名を adminTokenFromEnv にして、全体でこれを使うように統一
+    val adminTokenFromEnv = System.getenv("HP_ADMIN_TOKEN") ?: "admin-token-very-long"
 
     routing {
-        // =========== ここから：元々のAPI機能 ===========
+        // =========== 元々のAPI機能 ===========
 
         // 1. 管理者用：PIN設定
         post("/api/admin/setpin") {
             val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
-            val envAdminToken = System.getenv("HP_ADMIN_TOKEN")
-            if (!envAdminToken.isNullOrBlank() && token != envAdminToken) {
+
+            // ★修正: 内側での再定義をやめ、外側の変数と比較する
+            if (token != adminTokenFromEnv) {
                 return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
             }
+
             val req = call.receive<AdminSetPinRequest>()
             val cid = req.cid
             val pin = req.pin
@@ -48,27 +52,7 @@ fun Application.module() {
             repo.forceSetPin(cid, hash, req.initialPoint ?: 0)
             call.respond(OkResponse(true))
         }
-// ★追加: アプリからのログ同期（管理者用）
-        post("/api/admin/syncEvents") {
-            // 1. 認証チェック
-            val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
-            val envAdminToken = System.getenv("HP_ADMIN_TOKEN")
-            if (!envAdminToken.isNullOrBlank() && token != envAdminToken) {
-                return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
-            }
 
-            // 2. データ受け取り（今は受け取って「OK」と返すだけ。後でFirestore保存などを実装可能）
-            // アプリ側から送られてくるJSON: { "events": [ ... ] }
-            try {
-                val reqJson = call.receive<String>()
-                // ここで本来は reqJson を解析してDBに保存します
-                // println("Received events: $reqJson") // ログに出すなら
-
-                call.respond(OkResponse(true))
-            } catch (e: Exception) {
-                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid JSON format"))
-            }
-        }
         // 2. ユーザー用：PIN検証
         post("/api/pin") {
             val req = call.receive<PinRequest>()
@@ -90,18 +74,35 @@ fun Application.module() {
             call.respond(cardView)
         }
 
-        // =========== ★ここから追加！(Web画面を表示する機能)★ ===========
+        // ★追加: アプリからのログ同期（管理者用）
+        post("/api/admin/syncEvents") {
+            // 認証チェック
+            val token = call.request.header("Authorization")?.removePrefix("Bearer ")?.trim()
+            if (token != adminTokenFromEnv) {
+                return@post call.respond(HttpStatusCode.Unauthorized, ErrorResponse("Invalid admin token"))
+            }
 
-        // 4. app.js や styles.css を読み込めるようにする
-        // (URLで /c/app.js と来たものを、staticフォルダの中身に繋ぐ)
+            try {
+                // ★修正: 変数に入れずにデータを受け取る（警告対策）
+                call.receive<String>()
+
+                // 本来はここでデータを解析して保存するが、今はOKだけ返す
+                call.respond(OkResponse(true))
+            } catch (_: Exception) { // ★修正: 使わない変数は _ にする
+                call.respond(HttpStatusCode.BadRequest, ErrorResponse("Invalid JSON format"))
+            }
+        }
+
+        // =========== Web画面を表示する機能 ===========
+
+        // 4. app.js や styles.css
         staticResources("/c", "static")
 
-        // 5. 画像ファイル (/assets/xxx.png) を読み込めるようにする
+        // 5. 画像ファイル
         staticResources("/assets", "static/assets")
 
-        // 6. 最重要： /c/hellza01 にアクセスしたら index.html を表示する
+        // 6. index.html 表示
         get("/c/{cid}") {
-            // "static/index.html" を読み込んで表示
             val content = this::class.java.classLoader.getResource("static/index.html")?.readText()
             if (content != null) {
                 call.respondText(content, ContentType.Text.Html)
