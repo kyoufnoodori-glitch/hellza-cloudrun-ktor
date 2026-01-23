@@ -2,13 +2,11 @@ package com.hellza.cloudrun
 
 import kotlinx.serialization.Serializable
 
-// =========== 共通データクラス定義 ===========
-
 @Serializable
 data class AdminSetPinRequest(
     val cid: String? = null,
     val pin: String? = null,
-    val initialPoint: Int? = 0
+    val initialPoint: Int? = null
 )
 
 @Serializable
@@ -18,35 +16,42 @@ data class PinRequest(
 )
 
 @Serializable
-data class OkResponse(val ok: Boolean = true)
+data class SyncRequest(
+    val events: List<SyncEvent> = emptyList()
+)
 
 @Serializable
-data class ErrorResponse(val message: String)
+data class SyncEvent(
+    val event_id: String,
+    // 数値(Long)になっていること
+    val timestamp: Long,
+    val type: String,
+    val card_id: String? = null,
+    val delta: Int? = null,
+    val new_point: Int? = null,
+    val tag_uid: String? = null
+)
+
+@Serializable
+data class OkResponse(
+    val ok: Boolean,
+    val message: String = "ok"
+)
+
+@Serializable
+data class ErrorResponse(
+    val error: String
+)
 
 @Serializable
 data class CardView(
     val cid: String,
     val point: Int,
-    val updatedAt: Long,
-    val state: String = "normal"
+    val updatedAt: Long
 )
 
-// 同期用
+// ★これが抜けていました！これを追加すれば直ります
 @Serializable
-data class SyncRequest(val events: List<SyncEvent>)
-
-@Serializable
-data class SyncEvent(
-    val event_id: String,
-    val timestamp: Long,
-    val type: String,
-    val card_id: String?,
-    val delta: Int?,
-    val new_point: Int?,
-    val tag_uid: String?
-)
-
-// Cookieセッション用 (Auth.ktで使用)
 data class UserSession(
     val cid: String,
     val issuedAtEpochSec: Long
