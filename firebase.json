@@ -1,0 +1,19 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/api/**",
+        "run": {
+          "serviceId": "hellza-point-api",
+          "region": "asia-northeast1"
+        }
+      },
+      {
+        "source": "/c/**",
+        "destination": "/c/index.html"
+      }
+    ]
+  }
+}

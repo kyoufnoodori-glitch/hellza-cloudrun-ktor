@@ -1,0 +1,67 @@
+body {
+  margin:0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+  background:#f3f4f6;
+}
+.wrap { max-width: 520px; margin: 24px auto; padding: 0 12px; }
+
+.card {
+  background:#fff;
+  border-radius:16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  padding:16px;
+}
+.hidden { display:none; }
+
+.h { margin: 0 0 6px; font-size: 18px; }
+.cid { color:#555; margin-bottom: 12px; }
+
+.label { display:block; font-size: 12px; color:#555; margin-top: 10px; margin-bottom: 6px; }
+.input { width:100%; padding: 12px; border:1px solid #d1d5db; border-radius: 12px; font-size: 16px; }
+
+.btn {
+  width:100%;
+  margin-top: 12px;
+  padding: 12px;
+  border:0;
+  border-radius: 12px;
+  font-size: 16px;
+  cursor:pointer;
+  background:#111827;
+  color:#fff;
+}
+.btn.sub { background:#374151; }
+
+.msg { margin-top: 10px; color:#b91c1c; min-height: 18px; }
+
+/* === Card UI === */
+.cardUi { position:relative; border-radius: 16px; overflow:hidden; }
+.bg { width: 100%; display:block; }
+
+/* PNGにSVGをピッタリ重ねる */
+.ovsvg{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+}
+
+/* 文字デザイン（必要なら後で微調整） */
+.t-id{
+  font-weight: 900;
+  font-size: 26px;
+  fill: #111;
+}
+
+.t-pt{
+  font-weight: 900;
+  font-size: 160px;
+  fill: #111;
+}
+
+.t-upd{
+  font-weight: 900;
+  font-size: 32px;
+  fill: #111;
+}
