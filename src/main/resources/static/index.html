@@ -101,7 +101,6 @@
             transform: translate(-50%, -50%);
             text-align: center;
             width: 100%;
-            /* 背景の山脈が見えるように少し位置調整してもOK */
         }
 
         .points-label {
@@ -127,7 +126,7 @@
             text-shadow: 1px 1px 0 #000;
         }
 
-        /* 3. 右上：会員ID */
+        /* 3. 右上：会員ID (サイズ調整) */
         .id-container {
             position: absolute;
             top: 25px;
@@ -136,7 +135,7 @@
         }
 
         .id-label {
-            font-size: 12px;
+            font-size: 11px; /* 12px -> 11px に少し縮小 */
             color: #aaaaaa;
             margin-bottom: 2px;
             letter-spacing: 1px;
@@ -145,7 +144,7 @@
 
         #user-id {
             font-family: monospace;
-            font-size: 28px;
+            font-size: 16px; /* 28px -> 16px に縮小してバランス調整 */
             color: #ffffff;
             letter-spacing: 2px;
             font-weight: bold;
@@ -200,33 +199,19 @@
 
         if (isPortrait) {
             // === スマホ縦向き：90度回転して最大化 ===
-
-            // 回転後のカードの幅 = 画面の高さに合わせたい
-            // 回転後のカードの高さ = 画面の幅に合わせたい
-
-            // 余白（セーフエリア考慮で少し余裕を持たせる）
             const margin = 0.92;
-
-            // 倍率計算
-            // 1. 画面の幅(短辺)に、カードの高さ(320)が収まる倍率
             const scaleW = (windowWidth * margin) / cardBaseHeight;
-            // 2. 画面の高さ(長辺)に、カードの幅(560)が収まる倍率
             const scaleH = (windowHeight * margin) / cardBaseWidth;
-
-            // どちらか小さい方の倍率を採用（はみ出さないように）
             const scale = Math.min(scaleW, scaleH);
 
             card.style.transform = `rotate(90deg) scale(${scale})`;
         } else {
             // === PC・スマホ横向き：そのまま表示 ===
-
             const margin = 0.95;
             const scaleW = (windowWidth * margin) / cardBaseWidth;
             const scaleH = (windowHeight * margin) / cardBaseHeight;
-
-            // 画面よりカードが大きい場合のみ縮小、それ以外は1倍（または拡大したければMath.minだけでOK）
             let scale = Math.min(scaleW, scaleH);
-            if (scale > 1.2) scale = 1.2; // PCであまり巨大になりすぎないように制限
+            if (scale > 1.2) scale = 1.2;
 
             card.style.transform = `rotate(0deg) scale(${scale})`;
         }
