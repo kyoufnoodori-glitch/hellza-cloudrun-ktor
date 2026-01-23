@@ -2,114 +2,169 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Hellzapoppin' Member's Card</title>
     <style>
+        /* ================= 全体の設定 ================= */
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a1a; /* 全体の背景：ダークグレー */
-            color: white;
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            /* 背景は黒一色で統一 */
+            background-color: #000000;
+            color: #ffffff;
+            /* フォントは少しエッジの効いたものに */
+            font-family: 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+            /* 画面中央に配置 */
             display: flex;
             justify-content: center;
             align-items: center;
+            /* 画面の高さいっぱいに広げる */
             height: 100vh;
+            /* スクロールを防ぐ */
+            overflow: hidden;
         }
 
-        /* カード本体のデザイン */
+        /* ================= カード本体のデザイン ================= */
         .card {
-            width: 320px;
-            height: 500px;
-            background: linear-gradient(135deg, #ff00cc, #333399); /* 仮の背景グラデーション */
+            /* 基本サイズ：横長 */
+            width: 560px;
+            height: 320px;
+            /* 角丸 */
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            /* 強い影をつけて浮き上がらせる */
+            box-shadow: 0 20px 50px rgba(255, 0, 0, 0.3);
             position: relative;
             overflow: hidden;
-            text-align: center;
+            text-align: left;
+            /* 枠線 */
+            border: 3px solid #ff3366;
         }
 
-        /* アイドル画像の背景（assetsフォルダに画像を入れると表示されます） */
+        /* 背景画像の設定 */
         .card-bg {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            /* background-image: url('/assets/members_bg.png'); */
+            /* 配置した画像を読み込む */
+            background-image: url('/assets/members_bg.png');
+            /* 画像をカード全体に隙間なく表示 */
             background-size: cover;
+            /* 画像の中心を合わせる */
             background-position: center;
-            opacity: 0.6; /* 文字を見やすくするため少し薄く */
+            /* 文字を読みやすくするため、少し暗くするフィルター */
+            filter: brightness(0.7);
             z-index: 0;
         }
 
+        /* ================= コンテンツのレイアウト ================= */
         .content {
             position: relative;
-            z-index: 1; /* 背景より手前に表示 */
+            z-index: 1; /* 背景より手前に */
             height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 20px;
+            padding: 25px;
             box-sizing: border-box;
+            /* テキストに影をつけて視認性を高める */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
         }
 
+        /* ヘッダー部分（グループ名など） */
         .header {
-            margin-top: 20px;
+            /* 左上に配置 */
         }
 
         .group-name {
-            font-size: 24px;
-            font-weight: bold;
+            font-size: 32px;
+            font-weight: 900;
             text-transform: uppercase;
-            letter-spacing: 2px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            letter-spacing: 1px;
+            /* グラデーション文字 */
+            background: linear-gradient(to right, #fff, #ff3366);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
+        .card-title {
+            font-size: 14px;
+            color: #ff99cc;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        /* ポイント表示部分 */
         .points-container {
-            background: rgba(0, 0, 0, 0.6);
-            padding: 20px;
-            border-radius: 15px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255,255,255,0.2);
+            /* 右側に配置 */
+            align-self: flex-end;
+            text-align: right;
+            margin-bottom: 30px;
         }
 
         .points-label {
-            font-size: 14px;
-            color: #ccc;
+            font-size: 16px;
+            color: #cccccc;
+            margin-bottom: 5px;
         }
 
         .points-value {
-            font-size: 48px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 0 0 10px #ff00cc;
+            font-size: 64px;
+            line-height: 1;
+            font-weight: 900;
+            color: #ffffff;
+            /* ポイント数を強調する発光エフェクト */
+            text-shadow: 0 0 20px #ff0000, 0 0 10px #ff3366;
         }
 
         .points-unit {
-            font-size: 18px;
+            font-size: 24px;
+            color: #ff3366;
+            margin-left: 5px;
         }
 
+        /* フッター部分（ID表示） */
         .footer {
-            margin-bottom: 20px;
-            font-size: 12px;
-            opacity: 0.8;
+            font-size: 14px;
+            color: #aaaaaa;
         }
 
         #user-id {
             font-family: monospace;
-            font-size: 16px;
-            letter-spacing: 1px;
+            font-size: 20px;
+            color: #ffffff;
+            letter-spacing: 2px;
+            margin-top: 5px;
         }
 
-        /* 読み込み中の表示 */
+        /* 読み込み中の点滅アニメーション */
         .loading {
-            font-size: 14px;
-            animation: blink 1s infinite;
+            font-size: 18px;
+            animation: blink 0.8s infinite alternate;
         }
 
         @keyframes blink {
-            50% { opacity: 0.5; }
+            from { opacity: 0.3; }
+            to { opacity: 1.0; }
+        }
+
+        /* ================= ★スマホでの横置き強制設定★ ================= */
+        /* 画面幅が狭く、かつ縦向き（portrait）の場合に適用 */
+        @media screen and (max-width: 768px) and (orientation: portrait) {
+            .card {
+                /* 絶対配置で画面中央へ */
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                /* 1. translate(-50%, -50%): 中心を基準点にする
+                   2. rotate(90deg): 90度回転させて横向きにする
+                   3. scale(0.7): 画面からはみ出さないように少し縮小（調整可能）
+                */
+                transform: translate(-50%, -50%) rotate(90deg) scale(0.7);
+                /* 回転の軸をカードの中心に設定 */
+                transform-origin: center center;
+            }
         }
     </style>
 </head>
@@ -121,7 +176,7 @@
     <div class="content">
         <div class="header">
             <div class="group-name">Hellzapoppin'</div>
-            <div style="font-size: 12px;">OFFICIAL MEMBER'S CARD</div>
+            <div class="card-title">OFFICIAL MEMBER'S CARD</div>
         </div>
 
         <div class="points-container">
@@ -129,7 +184,6 @@
             <div class="points-value" id="points-display">
                 <span class="loading">Loading...</span>
             </div>
-            <div class="points-label">POINTS</div>
         </div>
 
         <div class="footer">
@@ -140,34 +194,44 @@
 </div>
 
 <script>
-    // 1. URLからID (例: hellza01) を取得する
-    // URLが .../c/hellza01 なので、最後の部分を取り出す
+    // 1. URLからIDを取得 (例: /c/hellza01 -> hellza01)
     const pathParts = window.location.pathname.split('/');
-    const cid = pathParts[pathParts.length - 1]; // "hellza01"
+    const cid = pathParts[pathParts.length - 1]; // 最後の部分を取得
 
     // 画面にIDを表示
-    document.getElementById('user-id').textContent = cid;
+    const userIdElement = document.getElementById('user-id');
+    if (cid && cid !== 'c') {
+         userIdElement.textContent = cid.toUpperCase();
+    } else {
+         userIdElement.textContent = 'UNKNOWN';
+    }
 
     // 2. APIを叩いてポイントを取得する
     async function fetchPoints() {
+        if (!cid || cid === 'c') {
+            document.getElementById('points-display').innerHTML = '<span style="font-size:24px">ERROR</span>';
+            return;
+        }
         try {
-            // /api/card?cid=hellza01 にアクセス
+            // APIにアクセス
             const response = await fetch(`/api/card?cid=${cid}`);
 
             if (response.ok) {
                 const data = await response.json();
-                // 取得したポイントを表示 (data.point がポイント数と想定)
-                // ※ Repo.ktの実装に合わせてプロパティ名は調整します
+                // ポイント数を取得（プロパティ名はサーバー側の実装に合わせてください。ここでは 'point' と仮定）
                 const point = data.point !== undefined ? data.point : 0;
 
+                // カンマ区切りで表示
+                const formattedPoint = point.toLocaleString();
+
                 document.getElementById('points-display').innerHTML =
-                    `${point}<span class="points-unit"> pt</span>`;
+                    `${formattedPoint}<span class="points-unit">pt</span>`;
             } else {
-                document.getElementById('points-display').textContent = "ERROR";
+                document.getElementById('points-display').innerHTML = '<span style="font-size:24px">ERROR</span>';
             }
         } catch (e) {
             console.error(e);
-            document.getElementById('points-display').textContent = "OFFLINE";
+            document.getElementById('points-display').innerHTML = '<span style="font-size:24px">OFFLINE</span>';
         }
     }
 
